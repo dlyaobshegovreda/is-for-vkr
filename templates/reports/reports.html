@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block title %}Отчёты — АвтоСервис{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h1 class="h3 mb-0">Отчёты и аналитика</h1>
+</div>
+
+<form method="get" class="row g-2 align-items-end mb-4">
+  <div class="col-auto">
+    <label class="form-label small mb-1">С</label>
+    <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-1">По</label>
+    <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-primary"><i class="bi bi-funnel me-1"></i>Применить</button>
+  </div>
+  <div class="col-auto">
+    <a href="{% url 'reports' %}" class="btn btn-outline-secondary">Сброс</a>
+  </div>
+  <div class="col-auto ms-auto">
+    <a href="{% url 'reports_export_xlsx' %}?date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-success">
+      <i class="bi bi-file-earmark-excel me-1"></i>Выгрузить в Excel
+    </a>
+  </div>
+  <div class="col-12"><small class="text-muted">Финансовые показатели — по выданным заказам (дата выдачи). Список заказ-нарядов — по дате приёма.</small></div>
+</form>
+
+<!-- Карточки: ряд 1 -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+    <div class="stat-icon text-success"><i class="bi bi-cash-stack"></i></div>
+    <div class="stat-value">{{ summary.revenue|floatformat:0 }} ₽</div>
+    <div class="stat-label">Выручка за период</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+    <div class="stat-icon text-primary"><i class="bi bi-clipboard-check"></i></div>
+    <div class="stat-value">{{ summary.orders }}</div>
+    <div class="stat-label">Выдано заказов</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+    <div class="stat-icon text-info"><i class="bi bi-receipt"></i></div>
+    <div class="stat-value">{{ summary.avg|floatformat:0 }} ₽</div>
+    <div class="stat-label">Средний чек</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+    <div class="stat-icon text-warning"><i class="bi bi-hourglass-split"></i></div>
+    <div class="stat-value">{{ summary.avg_repair_days|floatformat:1 }}</div>
+    <div class="stat-label">Средний срок ремонта, дней</div>
+  </div></div></div>
+</div>
+
+<!-- Карточки: ряд 2 -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+    <div class="stat-icon text-secondary"><i class="bi bi-tools"></i></div>
+    <div class="stat-value">{{ summary.works_amount|floatformat:0 }} ₽</div>
+    <div class="stat-label">Работы</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+    <div class="stat-icon text-secondary"><i class="bi bi-box-seam"></i></div>
+    <div class="stat-value">{{ summary.parts_amount|floatformat:0 }} ₽</div>
+    <div class="stat-label">Запчасти</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+    <div class="stat-icon text-info"><i class="bi bi-clock-history"></i></div>
+    <div class="stat-value">{{ summary.labor_hours|floatformat:1 }}</div>
+    <div class="stat-label">Нормо-часов выполнено</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+    <div class="stat-icon text-primary"><i class="bi bi-people"></i></div>
+    <div class="stat-value">{{ summary.clients_served }}</div>
+    <div class="stat-label">Клиентов обслужено<br><span class="text-muted small">из них новых: {{ summary.new_clients }}</span></div>
+  </div></div></div>
+</div>
+
+<!-- Выручка по месяцам -->
+<div class="card mb-4"><div class="card-body">
+  <h2 class="h6 text-muted mb-3">Выручка по месяцам</h2>
+  {% if revenue_chart.labels %}
+    <canvas id="revenueChart" height="90"></canvas>
+  {% else %}
+    <p class="text-muted text-center py-4 mb-0">Нет данных за выбранный период</p>
+  {% endif %}
+</div></div>
+
+<div class="row g-3 mb-4">
+  <!-- Структура выручки -->
+  <div class="col-lg-5">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h6 text-muted mb-3">Структура выручки</h2>
+      {% if summary.revenue %}
+        <canvas id="structureChart" height="200"></canvas>
+      {% else %}
+        <p class="text-muted text-center py-5 mb-0">Нет данных</p>
+      {% endif %}
+    </div></div>
+  </div>
+  <!-- Топ клиентов (график) -->
+  <div class="col-lg-7">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h6 text-muted mb-3">Топ клиентов по выручке</h2>
+      {% if clients_chart.labels %}
+        <canvas id="clientsChart" height="200"></canvas>
+      {% else %}
+        <p class="text-muted text-center py-5 mb-0">Нет данных</p>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Загрузка механиков -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-person-gear me-1"></i>Загрузка механиков</div>
+      <div class="card-body">{% if mechanic_chart.labels %}<canvas id="mechanicChart" height="160"></canvas>{% endif %}</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light"><tr><th>Механик</th><th class="text-center">Работ</th><th class="text-end">Сумма, ₽</th></tr></thead>
+          <tbody>
+            {% for r in mechanic_rows %}
+            <tr><td>{{ r.name }}</td><td class="text-center">{{ r.works }}</td><td class="text-end">{{ r.amount|floatformat:0 }}</td></tr>
+            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">Нет данных</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- Востребованные услуги -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-tools me-1"></i>Востребованные услуги</div>
+      <div class="card-body">{% if services_chart.labels %}<canvas id="servicesChart" height="160"></canvas>{% endif %}</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light"><tr><th>Услуга</th><th class="text-center">Раз</th><th class="text-end">Выручка, ₽</th></tr></thead>
+          <tbody>
+            {% for r in service_rows %}
+            <tr><td>{{ r.service__name }}</td><td class="text-center">{{ r.cnt }}</td><td class="text-end">{{ r.revenue|floatformat:0 }}</td></tr>
+            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">Нет данных</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Топ клиентов (таблица) -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-star me-1"></i>Топ клиентов</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light"><tr><th>Клиент</th><th class="text-center">Заказов</th><th class="text-end">Сумма, ₽</th></tr></thead>
+          <tbody>
+            {% for r in top_clients %}
+            <tr><td>{{ r.client__full_name }}</td><td class="text-center">{{ r.cnt }}</td><td class="text-end">{{ r.revenue|floatformat:0 }}</td></tr>
+            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">Нет данных</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- Движение запчастей + низкие остатки -->
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-box-seam me-1"></i>Движение запчастей (расход)</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light"><tr><th>Запчасть</th><th class="text-center">Израсходовано</th><th class="text-end">Сумма, ₽</th></tr></thead>
+          <tbody>
+            {% for r in parts_rows %}
+            <tr><td>{{ r.part__name }}</td><td class="text-center">{{ r.qty }}</td><td class="text-end">{{ r.amount|floatformat:0 }}</td></tr>
+            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">Нет данных</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header bg-white fw-semibold text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Заканчивается на складе</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light"><tr><th>Запчасть</th><th>Артикул</th><th class="text-end">Остаток</th></tr></thead>
+          <tbody>
+            {% for p in low_stock %}
+            <tr><td>{{ p.name }}</td><td class="small text-muted">{{ p.article|default:"—" }}</td><td class="text-end"><span class="badge bg-danger">{{ p.stock }}</span></td></tr>
+            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">Все запчасти в достатке</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Все заказ-наряды за период -->
+<div class="card mb-4">
+  <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-list-check me-1"></i>Все заказ-наряды за период</span>
+    <span class="badge bg-secondary">{{ all_orders|length }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light"><tr>
+        <th>№</th><th>Дата приёма</th><th>Клиент</th><th>Автомобиль</th>
+        <th>Статус</th><th>Оплата</th><th class="text-end">Сумма, ₽</th>
+      </tr></thead>
+      <tbody>
+        {% for o in all_orders %}
+        <tr style="cursor:pointer" onclick="location.href='{% url 'order_detail' o.pk %}'">
+          <td class="fw-medium">{{ o.id }}</td>
+          <td class="text-nowrap">{{ o.created_at|date:"d.m.Y" }}</td>
+          <td>{{ o.client.full_name }}</td>
+          <td>{{ o.vehicle.brand }} {{ o.vehicle.model }} <span class="text-muted">({{ o.vehicle.plate }})</span></td>
+          <td><span class="badge bg-{{ o.status_color }}">{{ o.get_status_display }}</span></td>
+          <td>{% if o.is_paid %}<span class="badge bg-success">Оплачен</span>{% else %}<span class="badge bg-light text-dark border">Не оплачен</span>{% endif %}</td>
+          <td class="text-end">{{ o.total|floatformat:0 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">За выбранный период заказ-нарядов нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{{ revenue_chart|json_script:"revenue-data" }}
+{{ structure_chart|json_script:"structure-data" }}
+{{ clients_chart|json_script:"clients-data" }}
+{{ mechanic_chart|json_script:"mechanic-data" }}
+{{ services_chart|json_script:"services-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+(function () {
+  const accent = "#e8853a";
+  const dark = "#1f2733";
+  function data(id) { const el = document.getElementById(id); return el ? JSON.parse(el.textContent) : {labels:[],data:[]}; }
+  function bar(elId, dataId, label, horizontal) {
+    const el = document.getElementById(elId); if (!el) return;
+    const d = data(dataId); if (!d.labels.length) return;
+    new Chart(el, {
+      type: "bar",
+      data: { labels: d.labels, datasets: [{ label: label, data: d.data, backgroundColor: accent }] },
+      options: { indexAxis: horizontal ? "y" : "x",
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true }, y: { beginAtZero: true } } }
+    });
+  }
+  bar("revenueChart", "revenue-data", "Выручка, ₽", false);
+  bar("clientsChart", "clients-data", "Выручка, ₽", true);
+  bar("mechanicChart", "mechanic-data", "Сумма работ, ₽", true);
+  bar("servicesChart", "services-data", "Количество", true);
+
+  const stEl = document.getElementById("structureChart");
+  if (stEl) {
+    const d = data("structure-data");
+    if (d.data && (d.data[0] || d.data[1])) {
+      new Chart(stEl, {
+        type: "doughnut",
+        data: { labels: d.labels, datasets: [{ data: d.data, backgroundColor: [accent, dark] }] },
+        options: { plugins: { legend: { position: "bottom" } } }
+      });
+    }
+  }
+})();
+</script>
+{% endblock %}

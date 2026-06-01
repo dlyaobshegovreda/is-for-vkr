@@ -1,0 +1,21 @@
+{% extends "crud/list_base.html" %}
+{% block title %}Поставщики — АвтоСервис{% endblock %}
+{% block list_title %}Поставщики{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'supplier_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Добавить</a>
+{% endblock %}
+{% block thead %}<th>Название</th><th>Контакты</th><th class="text-center">Запчастей</th><th class="text-end">Действия</th>{% endblock %}
+{% block tbody %}
+{% for sup in object_list %}
+<tr>
+  <td class="fw-medium">{{ sup.name }}</td>
+  <td>{{ sup.contacts|default:"—" }}</td>
+  <td class="text-center">{{ sup.parts.count }}</td>
+  <td class="text-end text-nowrap">
+    {% include "crud/_row_actions.html" with pk=sup.pk edit="supplier_update" delete="supplier_delete" %}
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="4" class="text-center text-muted py-4">Поставщики не найдены</td></tr>
+{% endfor %}
+{% endblock %}

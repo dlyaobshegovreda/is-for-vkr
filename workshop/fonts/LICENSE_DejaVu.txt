@@ -1,0 +1,4 @@
+Шрифты DejaVu (DejaVuSans.ttf, DejaVuSans-Bold.ttf) распространяются по
+свободной лицензии Bitstream Vera / DejaVu, допускающей использование,
+встраивание и распространение. Используются для генерации PDF с кириллицей.
+Подробнее: https://dejavu-fonts.github.io/License.html

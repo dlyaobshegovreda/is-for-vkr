@@ -1,0 +1,24 @@
+{% extends "crud/list_base.html" %}
+{% block title %}Услуги — АвтоСервис{% endblock %}
+{% block list_title %}Услуги{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'service_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Добавить</a>
+{% endblock %}
+{% block thead %}
+  <th>Наименование</th><th>Категория</th><th class="text-end">Нормо-часы</th><th class="text-end">Цена, ₽</th><th class="text-end">Действия</th>
+{% endblock %}
+{% block tbody %}
+{% for s in object_list %}
+<tr>
+  <td class="fw-medium">{{ s.name }}</td>
+  <td><span class="badge bg-light text-dark">{{ s.category.name }}</span></td>
+  <td class="text-end">{{ s.labor_hours }}</td>
+  <td class="text-end">{{ s.price }}</td>
+  <td class="text-end text-nowrap">
+    {% include "crud/_row_actions.html" with pk=s.pk edit="service_update" delete="service_delete" %}
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="5" class="text-center text-muted py-4">Услуги не найдены</td></tr>
+{% endfor %}
+{% endblock %}

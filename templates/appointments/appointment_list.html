@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Записи на приём — АвтоСервис{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Записи на приём</h1>
+  <a href="{% url 'appointment_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Новая запись</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-4">
+    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Поиск: клиент или гос. номер...">
+  </div>
+  <div class="col-md-3">
+    <select name="status" class="form-select" onchange="this.form.submit()">
+      <option value="">Все статусы</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if val == status %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Найти</button></div>
+  {% if q or status %}
+    <div class="col-md-2"><a href="{% url 'appointment_list' %}" class="btn btn-outline-secondary w-100">Сброс</a></div>
+  {% endif %}
+</form>
+
+<div class="card"><div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="table-light"><tr>
+      <th>Дата и время</th><th>Клиент</th><th>Автомобиль</th>
+      <th>Статус</th><th>Комментарий</th><th class="text-end">Действия</th>
+    </tr></thead>
+    <tbody>
+      {% for a in object_list %}
+      <tr {% if a.is_overdue %}class="table-warning"{% endif %}>
+        <td class="fw-medium text-nowrap">
+          {{ a.scheduled_at|date:"d.m.Y H:i" }}
+          {% if a.is_overdue %}<i class="bi bi-exclamation-triangle text-warning ms-1" title="Время приёма прошло"></i>{% endif %}
+        </td>
+        <td>{{ a.client.full_name }}</td>
+        <td>{{ a.vehicle }}</td>
+        <td><span class="badge bg-{{ a.status_color }}">{{ a.get_status_display }}</span></td>
+        <td class="small text-muted">{{ a.comment|default:"—"|truncatechars:40 }}</td>
+        <td class="text-end text-nowrap">
+          <a href="{% url 'appointment_update' a.pk %}" class="btn btn-sm btn-outline-secondary" title="Изменить"><i class="bi bi-pencil"></i></a>
+          {% if a.status == 'planned' %}
+            <form method="post" action="{% url 'appointment_set_status' a.pk %}" class="d-inline">
+              {% csrf_token %}<input type="hidden" name="status" value="confirmed">
+              <button class="btn btn-sm btn-outline-primary" title="Подтвердить"><i class="bi bi-check2"></i></button>
+            </form>
+          {% endif %}
+          {% if a.status == 'planned' or a.status == 'confirmed' %}
+            <form method="post" action="{% url 'appointment_convert' a.pk %}" class="d-inline" onsubmit="return confirm('Создать заказ-наряд по этой записи?')">
+              {% csrf_token %}<button class="btn btn-sm btn-outline-success" title="Создать заказ-наряд"><i class="bi bi-clipboard-plus"></i></button>
+            </form>
+            <form method="post" action="{% url 'appointment_set_status' a.pk %}" class="d-inline" onsubmit="return confirm('Отменить запись?')">
+              {% csrf_token %}<input type="hidden" name="status" value="cancelled">
+              <button class="btn btn-sm btn-outline-warning" title="Отменить"><i class="bi bi-x-circle"></i></button>
+            </form>
+          {% endif %}
+          <a href="{% url 'appointment_delete' a.pk %}" class="btn btn-sm btn-outline-danger" title="Удалить"><i class="bi bi-trash"></i></a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted py-4">Записи не найдены</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+
+{% if is_paginated %}
+<nav class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0">
+  {% if page_obj.has_previous %}
+    <li class="page-item"><a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}{% if status %}status={{ status }}&{% endif %}page={{ page_obj.previous_page_number }}">←</a></li>
+  {% endif %}
+  <li class="page-item disabled"><span class="page-link">Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+  {% if page_obj.has_next %}
+    <li class="page-item"><a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}{% if status %}status={{ status }}&{% endif %}page={{ page_obj.next_page_number }}">→</a></li>
+  {% endif %}
+</ul></nav>
+{% endif %}
+{% endblock %}

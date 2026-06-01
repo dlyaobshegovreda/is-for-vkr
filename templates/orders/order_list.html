@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Заказ-наряды — АвтоСервис{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Заказ-наряды</h1>
+  {% if user.is_admin or user.is_receiver %}
+    <a href="{% url 'order_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Новый заказ-наряд</a>
+  {% endif %}
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-4">
+    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Поиск: гос. номер или клиент...">
+  </div>
+  <div class="col-md-3">
+    <select name="status" class="form-select" onchange="this.form.submit()">
+      <option value="">Все статусы</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if val == status %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Найти</button></div>
+  {% if q or status %}
+    <div class="col-md-2"><a href="{% url 'order_list' %}" class="btn btn-outline-secondary w-100">Сброс</a></div>
+  {% endif %}
+</form>
+
+<div class="card"><div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="table-light"><tr>
+      <th>№</th><th>Автомобиль</th><th>Клиент</th><th>Статус</th>
+      <th>Оплата</th><th class="text-end">Сумма, ₽</th><th>Принят</th>
+    </tr></thead>
+    <tbody>
+      {% for o in object_list %}
+      <tr style="cursor:pointer" onclick="location.href='{% url 'order_detail' o.pk %}'">
+        <td class="fw-medium">{{ o.id }}</td>
+        <td>{{ o.vehicle }}</td>
+        <td>{{ o.client.full_name }}</td>
+        <td><span class="badge bg-{{ o.status_color }}">{{ o.get_status_display }}</span></td>
+        <td>{% if o.is_paid %}<span class="badge bg-success">Оплачен</span>{% else %}<span class="badge bg-light text-dark border">Не оплачен</span>{% endif %}</td>
+        <td class="text-end">{{ o.total }}</td>
+        <td>{{ o.created_at|date:"d.m.Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted py-4">Заказ-наряды не найдены</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+
+{% if is_paginated %}
+<nav class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0">
+  {% if page_obj.has_previous %}
+    <li class="page-item"><a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}{% if status %}status={{ status }}&{% endif %}page={{ page_obj.previous_page_number }}">←</a></li>
+  {% endif %}
+  <li class="page-item disabled"><span class="page-link">Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+  {% if page_obj.has_next %}
+    <li class="page-item"><a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}{% if status %}status={{ status }}&{% endif %}page={{ page_obj.next_page_number }}">→</a></li>
+  {% endif %}
+</ul></nav>
+{% endif %}
+{% endblock %}

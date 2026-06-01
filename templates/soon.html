@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}В разработке — АвтоСервис{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <i class="bi bi-cone-striped display-1 text-warning"></i>
+  <h1 class="h3 mt-3">Раздел в разработке</h1>
+  <p class="text-muted">Эта часть системы появится на следующих этапах.</p>
+  <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary mt-2">На панель управления</a>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "crud/list_base.html" %}
+{% block title %}Клиенты — АвтоСервис{% endblock %}
+{% block list_title %}Клиенты{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'client_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Добавить</a>
+{% endblock %}
+{% block thead %}
+  <th>ФИО / Название</th><th>Телефон</th><th>Email</th><th>Тип</th>
+  <th class="text-center">Авто</th><th class="text-end">Действия</th>
+{% endblock %}
+{% block tbody %}
+{% for c in object_list %}
+<tr>
+  <td><a href="{% url 'client_detail' c.pk %}" class="text-decoration-none fw-medium">{{ c.full_name }}</a></td>
+  <td>{{ c.phone }}</td>
+  <td>{{ c.email|default:"—" }}</td>
+  <td><span class="badge bg-light text-dark">{{ c.get_type_display }}</span></td>
+  <td class="text-center">{{ c.vehicles.count }}</td>
+  <td class="text-end text-nowrap">
+    {% include "crud/_row_actions.html" with pk=c.pk edit="client_update" delete="client_delete" %}
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="text-center text-muted py-4">Клиенты не найдены</td></tr>
+{% endfor %}
+{% endblock %}

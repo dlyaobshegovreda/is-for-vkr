@@ -1,0 +1,26 @@
+{% extends "crud/list_base.html" %}
+{% block title %}Автомобили — АвтоСервис{% endblock %}
+{% block list_title %}Автомобили{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'vehicle_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Добавить</a>
+{% endblock %}
+{% block thead %}
+  <th>Марка и модель</th><th>Гос. номер</th><th>VIN</th><th>Владелец</th>
+  <th class="text-end">Пробег, км</th><th class="text-end">Действия</th>
+{% endblock %}
+{% block tbody %}
+{% for v in object_list %}
+<tr>
+  <td class="fw-medium">{{ v.brand }} {{ v.model }}{% if v.year %} <span class="text-muted">({{ v.year }})</span>{% endif %}</td>
+  <td>{{ v.plate }}</td>
+  <td class="small text-muted">{{ v.vin|default:"—" }}</td>
+  <td><a href="{% url 'client_detail' v.client.pk %}" class="text-decoration-none">{{ v.client.full_name }}</a></td>
+  <td class="text-end">{{ v.mileage|default:"—" }}</td>
+  <td class="text-end text-nowrap">
+    {% include "crud/_row_actions.html" with pk=v.pk edit="vehicle_update" delete="vehicle_delete" %}
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="text-center text-muted py-4">Автомобили не найдены</td></tr>
+{% endfor %}
+{% endblock %}

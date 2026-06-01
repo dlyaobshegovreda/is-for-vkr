@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">{% block list_title %}{% endblock %}</h1>
+  <div>{% block list_actions %}{% endblock %}</div>
+</div>
+
+{% block list_search %}{% include "crud/_search.html" %}{% endblock %}
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr>{% block thead %}{% endblock %}</tr></thead>
+      <tbody>{% block tbody %}{% endblock %}</tbody>
+    </table>
+  </div>
+</div>
+
+{% include "crud/_pagination.html" %}
+{% endblock %}

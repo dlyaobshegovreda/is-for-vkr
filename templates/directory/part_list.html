@@ -1,0 +1,32 @@
+{% extends "crud/list_base.html" %}
+{% block title %}Склад запчастей — АвтоСервис{% endblock %}
+{% block list_title %}Склад запчастей{% endblock %}
+{% block list_actions %}
+  <a href="{% url 'part_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Добавить</a>
+{% endblock %}
+{% block thead %}
+  <th>Наименование</th><th>Артикул</th><th>Поставщик</th>
+  <th class="text-end">Остаток</th><th class="text-end">Цена, ₽</th><th class="text-end">Действия</th>
+{% endblock %}
+{% block tbody %}
+{% for p in object_list %}
+<tr>
+  <td class="fw-medium">{{ p.name }}</td>
+  <td class="small text-muted">{{ p.article|default:"—" }}</td>
+  <td>{{ p.supplier.name|default:"—" }}</td>
+  <td class="text-end">
+    {% if p.stock <= 5 %}
+      <span class="badge bg-danger">{{ p.stock }}</span>
+    {% else %}
+      {{ p.stock }}
+    {% endif %}
+  </td>
+  <td class="text-end">{{ p.price }}</td>
+  <td class="text-end text-nowrap">
+    {% include "crud/_row_actions.html" with pk=p.pk edit="part_update" delete="part_delete" %}
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="text-center text-muted py-4">Запчасти не найдены</td></tr>
+{% endfor %}
+{% endblock %}

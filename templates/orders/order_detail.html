@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Заказ-наряд №{{ order.id }} — АвтоСервис{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb">
+  <li class="breadcrumb-item"><a href="{% url 'order_list' %}">Заказ-наряды</a></li>
+  <li class="breadcrumb-item active">№{{ order.id }}</li>
+</ol></nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">Заказ-наряд №{{ order.id }}
+      <span class="badge bg-{{ order.status_color }} align-middle">{{ order.get_status_display }}</span>
+    </h1>
+    <div class="text-muted">{{ order.vehicle }} · {{ order.client.full_name }}</div>
+  </div>
+  <div class="text-nowrap">
+    <a href="{% url 'order_pdf' order.pk %}" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Заказ-наряд (PDF)</a>
+    {% if order.status == 'issued' and can_manage %}
+      <a href="{% url 'order_act_pdf' order.pk %}" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-text me-1"></i>Акт (PDF)</a>
+    {% endif %}
+    {% if can_manage %}
+      <a href="{% url 'order_update' order.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil me-1"></i>Изменить</a>
+      <a href="{% url 'order_delete' order.pk %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Левая колонка -->
+  <div class="col-lg-4">
+    <div class="card mb-3"><div class="card-body">
+      <h2 class="h6 text-muted mb-3">Информация</h2>
+      <dl class="row mb-0 small">
+        <dt class="col-5">Клиент</dt><dd class="col-7"><a href="{% url 'client_detail' order.client.pk %}" class="text-decoration-none">{{ order.client.full_name }}</a></dd>
+        <dt class="col-5">Телефон</dt><dd class="col-7">{{ order.client.phone }}</dd>
+        <dt class="col-5">Автомобиль</dt><dd class="col-7">{{ order.vehicle.brand }} {{ order.vehicle.model }}</dd>
+        <dt class="col-5">Гос. номер</dt><dd class="col-7">{{ order.vehicle.plate }}</dd>
+        <dt class="col-5">Приёмщик</dt><dd class="col-7">{{ order.receiver.full_name }}</dd>
+        <dt class="col-5">Принят</dt><dd class="col-7">{{ order.created_at|date:"d.m.Y H:i" }}</dd>
+        {% if order.mileage_in %}<dt class="col-5">Пробег</dt><dd class="col-7">{{ order.mileage_in }} км</dd>{% endif %}
+        {% if order.closed_at %}<dt class="col-5">Выдан</dt><dd class="col-7">{{ order.closed_at|date:"d.m.Y H:i" }}</dd>{% endif %}
+      </dl>
+      {% if order.complaint %}
+        <hr>
+        <div class="small"><div class="text-muted mb-1">Жалоба клиента:</div>{{ order.complaint|linebreaksbr }}</div>
+      {% endif %}
+    </div></div>
+
+    <div class="card"><div class="card-body">
+      <h2 class="h6 text-muted mb-3">Статус и оплата</h2>
+      {% if order.allowed_next_statuses %}
+        <form method="post" action="{% url 'order_change_status' order.pk %}" class="mb-3">
+          {% csrf_token %}
+          <label class="form-label small mb-1">Сменить статус:</label>
+          <div class="input-group input-group-sm">
+            <select name="status" class="form-select">
+              {% for s in order.allowed_next_statuses %}<option value="{{ s.value }}">{{ s.label }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-primary">OK</button>
+          </div>
+        </form>
+      {% else %}
+        <p class="small text-muted mb-3">Заказ закрыт, статус финальный.</p>
+      {% endif %}
+
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="small">Оплата:
+          {% if order.is_paid %}<span class="badge bg-success">Оплачен</span>{% else %}<span class="badge bg-light text-dark border">Не оплачен</span>{% endif %}
+        </span>
+        {% if can_manage %}
+          <form method="post" action="{% url 'order_toggle_paid' order.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-success">{% if order.is_paid %}Отменить{% else %}Отметить оплату{% endif %}</button>
+          </form>
+        {% endif %}
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Правая колонка -->
+  <div class="col-lg-8">
+    <!-- Работы -->
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-tools me-1"></i>Работы</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light"><tr>
+            <th>Услуга</th><th>Механик</th><th class="text-center">Кол-во</th>
+            <th class="text-end">Стоимость, ₽</th>{% if can_manage %}<th></th>{% endif %}
+          </tr></thead>
+          <tbody>
+            {% for si in services %}
+            <tr>
+              <td>{{ si.service.name }}</td>
+              <td>{{ si.mechanic.full_name|default:"—" }}</td>
+              <td class="text-center">{{ si.quantity }}</td>
+              <td class="text-end">{{ si.cost }}</td>
+              {% if can_manage %}
+              <td class="text-end">
+                <form method="post" action="{% url 'order_delete_service' order.pk si.pk %}" onsubmit="return confirm('Удалить работу?')">
+                  {% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Удалить"><i class="bi bi-x-lg"></i></button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{% if can_manage %}5{% else %}4{% endif %}" class="text-center text-muted py-3">Работы не добавлены</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if can_manage %}
+      <form method="post" action="{% url 'order_add_service' order.pk %}" class="row g-2 p-3 border-top mx-0">
+        {% csrf_token %}
+        <div class="col-md-5">{{ service_form.service }}</div>
+        <div class="col-md-3">{{ service_form.mechanic }}</div>
+        <div class="col-md-2">{{ service_form.quantity }}</div>
+        <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Работа</button></div>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Запчасти -->
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-box-seam me-1"></i>Запчасти</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light"><tr>
+            <th>Наименование</th><th class="text-center">Кол-во</th>
+            <th class="text-end">Цена, ₽</th><th class="text-end">Сумма, ₽</th>{% if can_manage %}<th></th>{% endif %}
+          </tr></thead>
+          <tbody>
+            {% for pi in parts %}
+            <tr>
+              <td>{{ pi.part.name }}</td>
+              <td class="text-center">{{ pi.quantity }}</td>
+              <td class="text-end">{{ pi.price }}</td>
+              <td class="text-end">{{ pi.line_sum }}</td>
+              {% if can_manage %}
+              <td class="text-end">
+                <form method="post" action="{% url 'order_delete_part' order.pk pi.pk %}" onsubmit="return confirm('Удалить запчасть? Остаток вернётся на склад.')">
+                  {% csrf_token %}<button class="btn btn-sm btn-outline-danger" title="Удалить"><i class="bi bi-x-lg"></i></button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{% if can_manage %}5{% else %}4{% endif %}" class="text-center text-muted py-3">Запчасти не добавлены</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if can_manage %}
+      <form method="post" action="{% url 'order_add_part' order.pk %}" class="row g-2 p-3 border-top mx-0">
+        {% csrf_token %}
+        <div class="col-md-8">{{ part_form.part }}</div>
+        <div class="col-md-2">{{ part_form.quantity }}</div>
+        <div class="col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Деталь</button></div>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Итого -->
+    <div class="card"><div class="card-body">
+      <div class="row text-end">
+        <div class="col"><div class="text-muted small">Работы</div><div class="h6 mb-0">{{ order.services_total }} ₽</div></div>
+        <div class="col border-start"><div class="text-muted small">Запчасти</div><div class="h6 mb-0">{{ order.parts_total }} ₽</div></div>
+        <div class="col border-start"><div class="text-muted small">Итого</div><div class="h4 text-primary mb-0">{{ order.total }} ₽</div></div>
+      </div>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

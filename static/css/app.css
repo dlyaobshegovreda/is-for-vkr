@@ -1,0 +1,30 @@
+:root {
+  --app-dark: #1f2733;
+  --app-accent: #e8853a;
+  --app-accent-dark: #c46a28;
+}
+
+body { background-color: #f4f5f7; }
+
+.app-navbar { background-color: var(--app-dark); }
+.app-navbar .navbar-brand,
+.app-navbar .nav-link:hover { color: #fff; }
+.app-navbar .nav-link { color: rgba(255, 255, 255, .78); }
+
+.btn-primary {
+  --bs-btn-bg: var(--app-accent);
+  --bs-btn-border-color: var(--app-accent);
+  --bs-btn-hover-bg: var(--app-accent-dark);
+  --bs-btn-hover-border-color: var(--app-accent-dark);
+  --bs-btn-active-bg: var(--app-accent-dark);
+  --bs-btn-active-border-color: var(--app-accent-dark);
+}
+.text-primary { color: var(--app-accent) !important; }
+
+.card { border: 1px solid #e7e9ec; border-radius: .6rem; }
+
+.stat-card .stat-icon { font-size: 1.6rem; margin-bottom: .35rem; }
+.stat-card .stat-value { font-size: 1.9rem; font-weight: 600; line-height: 1; }
+.stat-card .stat-label { color: #6c757d; font-size: .85rem; margin-top: .25rem; }
+
+.auth-card { border-radius: .8rem; }
